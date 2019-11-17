@@ -12,6 +12,9 @@ RUN apt-get update && \
     apt-get update && \
     apt-get install -y apt-transport-https dotnet-sdk-2.1 dotnet-sdk-3.0
 
+# Install OpenBLAS
+RUN apt-get install -y libopenblas-dev
+
 USER jovyan
 
 # Enable detection of running in a container
