@@ -18,9 +18,7 @@ RUN apt-get install -y --no-install-recommends \
         libicu60 \
         libssl1.1 \
         libstdc++6 \
-        zlib1g 
-
-RUN apt-get install -y xterm
+        zlib1g
 
 RUN rm -rf /var/lib/apt/lists/*
 
