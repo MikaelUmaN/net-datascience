@@ -1,4 +1,4 @@
-FROM mikaeluman/datascience:2020-03
+FROM mikaeluman/datascience:latest
 
 ARG NB_USER=jovyan
 ARG NB_UID=1000
@@ -55,5 +55,8 @@ RUN echo "$PATH"
 
 # Install kernel specs
 RUN dotnet interactive jupyter install
+
+# Make F# projects default for dotnet new cli
+ENV DOTNET_NEW_PREFERRED_LANG=F#
 
 CMD ["start.sh", "jupyter", "lab"]
