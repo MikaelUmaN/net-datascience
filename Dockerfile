@@ -1,4 +1,4 @@
-FROM mikaeluman/datascience:2020-03
+FROM mikaeluman/datascience:latest
 
 ARG NB_USER=jovyan
 ARG NB_UID=1000
@@ -10,6 +10,9 @@ WORKDIR ${HOME}
 
 USER root
 
+RUN apt-get update
+RUN apt-get install -y curl
+
 # Install .NET CLI dependencies
 RUN apt-get install -y --no-install-recommends \
         libc6 \
@@ -18,17 +21,17 @@ RUN apt-get install -y --no-install-recommends \
         libicu60 \
         libssl1.1 \
         libstdc++6 \
-        zlib1g 
+        zlib1g
 
 RUN rm -rf /var/lib/apt/lists/*
 
 # Install .NET Core SDK
 
 # When updating the SDK version, the sha512 value a few lines down must also be updated.
-ENV DOTNET_SDK_VERSION 5.0.100-preview.1.20155.7
+ENV DOTNET_SDK_VERSION 5.0.100-preview.4.20258.7
 
-RUN curl -SL --output dotnet.tar.gz https://download.visualstudio.microsoft.com/download/pr/c3d1886b-6846-4328-9692-a0adcdf30959/f0bd5e15b1825fc8f5b0a8166008e08a/dotnet-sdk-$DOTNET_SDK_VERSION-linux-x64.tar.gz \
-    && dotnet_sha512='e768641ef12604400edf4ba25bd7ea7a2e64c69fa447661b478ceff89f3c77c07ec69f3aa05b966400e88caae4f548a7bfc5a0747f511b5a10e88dd616f73b21' \
+RUN curl -SL --output dotnet.tar.gz https://download.visualstudio.microsoft.com/download/pr/473651e3-55d5-4e7c-b255-2cbe11358eea/6b6f33d86ee00720b36a7c34200f4d0c/dotnet-sdk-$DOTNET_SDK_VERSION-linux-x64.tar.gz \
+    && dotnet_sha512='d84fc2795ae6128299d318485a5e9ed8717f38aff83cac57ed9baa95785c33db7153e1d44aebfb21ab128f73540d09a5ecd58983345656c33c77c757faa4f624' \
     && echo "$dotnet_sha512 dotnet.tar.gz" | sha512sum -c - \
     && mkdir -p /usr/share/dotnet \
     && tar -zxf dotnet.tar.gz -C /usr/share/dotnet \
@@ -48,12 +51,15 @@ RUN chown -R ${NB_UID} ${HOME}
 USER ${USER}
 
 # Install lastest build from master branch of Microsoft.DotNet.Interactive from myget
-#RUN dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.117301 --add-source "https://dotnet.myget.org/F/dotnet-try/api/v3/index.json"
+#RUN dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.126813 --add-source "https://dotnet.myget.org/F/dotnet-try/api/v3/index.json"
 
 ENV PATH="${PATH}:${HOME}/.dotnet/tools"
 RUN echo "$PATH"
 
 # Install kernel specs
 #RUN dotnet interactive jupyter install
+
+# Make F# projects default for dotnet new cli
+ENV DOTNET_NEW_PREFERRED_LANG=F#
 
 CMD ["start.sh", "jupyter", "lab"]
