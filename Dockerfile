@@ -61,4 +61,6 @@ RUN dotnet interactive jupyter install
 # Make F# projects default for dotnet new cli
 ENV DOTNET_NEW_PREFERRED_LANG=F#
 
+RUN npm install -g yarn
+
 CMD ["start.sh", "jupyter", "lab"]
