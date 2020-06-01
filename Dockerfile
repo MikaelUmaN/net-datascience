@@ -11,6 +11,7 @@ WORKDIR ${HOME}
 USER root
 
 # Install .NET CLI dependencies
+RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y --no-install-recommends \
         libc6 \
         libgcc1 \
@@ -34,6 +35,18 @@ RUN curl -SL --output dotnet.tar.gz https://download.visualstudio.microsoft.com/
     && tar -zxf dotnet.tar.gz -C /usr/share/dotnet \
     && rm dotnet.tar.gz \
     && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
+
+# Install preview of next SDK version.
+# When updating the SDK version, the sha512 value a few lines down must also be updated.
+ENV DOTNET_SDK_VERSION_PREV 5.0.100-preview.4.20258.7
+
+RUN curl -SL --output dotnet5.tar.gz https://download.visualstudio.microsoft.com/download/pr/473651e3-55d5-4e7c-b255-2cbe11358eea/6b6f33d86ee00720b36a7c34200f4d0c/dotnet-sdk-$DOTNET_SDK_VERSION_PREV-linux-x64.tar.gz \
+    && dotnet_sha512='d84fc2795ae6128299d318485a5e9ed8717f38aff83cac57ed9baa95785c33db7153e1d44aebfb21ab128f73540d09a5ecd58983345656c33c77c757faa4f624' \
+    && echo "$dotnet_sha512 dotnet5.tar.gz" | sha512sum -c - \
+    && mkdir -p /usr/share/dotnet5 \
+    && tar -zxf dotnet5.tar.gz -C /usr/share/dotnet5 \
+    && rm dotnet5.tar.gz \
+    && ln -s /usr/share/dotnet5/dotnet /usr/bin/dotnet5
 
 # Enable detection of running in a container
 ENV DOTNET_RUNNING_IN_CONTAINER=true \
