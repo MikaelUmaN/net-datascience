@@ -38,10 +38,10 @@ RUN curl -SL --output dotnet.tar.gz https://download.visualstudio.microsoft.com/
 
 # Install preview of next SDK version.
 # When updating the SDK version, the sha512 value a few lines down must also be updated.
-ENV DOTNET_SDK_VERSION_PREV 5.0.100-preview.4.20258.7
+ENV DOTNET_SDK_VERSION_PREV 5.0.100-preview.5.20279.10
 
-RUN curl -SL --output dotnet5.tar.gz https://download.visualstudio.microsoft.com/download/pr/473651e3-55d5-4e7c-b255-2cbe11358eea/6b6f33d86ee00720b36a7c34200f4d0c/dotnet-sdk-$DOTNET_SDK_VERSION_PREV-linux-x64.tar.gz \
-    && dotnet_sha512='d84fc2795ae6128299d318485a5e9ed8717f38aff83cac57ed9baa95785c33db7153e1d44aebfb21ab128f73540d09a5ecd58983345656c33c77c757faa4f624' \
+RUN curl -SL --output dotnet5.tar.gz https://download.visualstudio.microsoft.com/download/pr/7cf9fa3e-af03-4181-baab-e04ed4b05268/fd44776a5169d6b126ee11d6140691be/dotnet-sdk-$DOTNET_SDK_VERSION_PREV-linux-x64.tar.gz \
+    && dotnet_sha512='0ee982dd7b6015d05c04a33ffba77fa9f61863578c5fd7c4b3847043da2fd17c36b2f8535af53f46dee66e9e59a52f5e7c995af7f9a69fbd3abbc524aca5931b' \
     && echo "$dotnet_sha512 dotnet5.tar.gz" | sha512sum -c - \
     && mkdir -p /usr/share/dotnet5 \
     && tar -zxf dotnet5.tar.gz -C /usr/share/dotnet5 \
@@ -61,7 +61,7 @@ RUN chown -R ${NB_UID} ${HOME}
 USER ${USER}
 
 # Install lastest build from master branch of Microsoft.DotNet.Interactive from myget
-RUN dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.126813 --add-source "https://dotnet.myget.org/F/dotnet-try/api/v3/index.json"
+RUN dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.131806 --add-source "https://dotnet.myget.org/F/dotnet-try/api/v3/index.json"
 RUN dotnet tool install -g fake-cli
 RUN dotnet tool install -g Paket
 
