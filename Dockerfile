@@ -15,14 +15,7 @@ RUN dpkg -i packages-microsoft-prod.deb
 
 # Install .NET CLI dependencies
 RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y --no-install-recommends \
-        libc6 \
-        libgcc1 \
-        libgssapi-krb5-2 \
-        libicu60 \
-        libssl1.1 \
-        libstdc++6 \
-        zlib1g
+#RUN apt-get install -y --no-install-recommends 
 
 # Install preview of next SDK version.
 RUN mkdir $HOME/dotnet_install && cd $HOME/dotnet_install
@@ -45,7 +38,7 @@ RUN chown -R ${NB_UID} ${HOME}
 USER ${USER}
 
 # Install lastest build from master branch of Microsoft.DotNet.Interactive from myget
-RUN dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.131806 --add-source "https://dotnet.myget.org/F/dotnet-try/api/v3/index.json"
+RUN dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.140401 --add-source "https://dotnet.myget.org/F/dotnet-try/api/v3/index.json"
 
 RUN dotnet tool install -g fake-cli
 RUN dotnet tool install -g Paket
