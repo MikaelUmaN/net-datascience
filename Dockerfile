@@ -35,13 +35,17 @@ ENV DOTNET_RUNNING_IN_CONTAINER=true \
     DOTNET_TRY_CLI_TELEMETRY_OPTOUT=true
 
 RUN chown -R ${NB_UID} ${HOME}
+
+RUN usermod -aG sudo ${USER}
+RUN echo "${USER}  ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/${USER}
+
 USER ${USER}
 
 # Install lastest build from master branch of Microsoft.DotNet.Interactive from myget
 RUN dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.140401 --add-source "https://dotnet.myget.org/F/dotnet-try/api/v3/index.json"
 
 RUN dotnet tool install -g fake-cli
-RUN dotnet tool install -g Paket
+RUN dotnet tool install -g paket
 
 ENV PATH="${PATH}:${HOME}/.dotnet/tools"
 RUN echo "$PATH"
