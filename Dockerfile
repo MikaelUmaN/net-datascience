@@ -42,7 +42,7 @@ RUN echo "${USER}  ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/${USER}
 USER ${USER}
 
 # Install lastest build from master branch of Microsoft.DotNet.Interactive from myget
-RUN dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.140401 --add-source "https://dotnet.myget.org/F/dotnet-try/api/v3/index.json"
+RUN dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.150201 --add-source "https://dotnet.myget.org/F/dotnet-try/api/v3/index.json"
 
 RUN dotnet tool install -g fake-cli
 RUN dotnet tool install -g paket
