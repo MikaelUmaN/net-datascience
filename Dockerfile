@@ -14,16 +14,15 @@ RUN wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-p
 RUN dpkg -i packages-microsoft-prod.deb
 
 # Install .NET CLI dependencies
-RUN apt-get update && apt-get upgrade -y
-#RUN apt-get install -y --no-install-recommends 
+RUN apt-get update; \
+  sudo apt-get install -y apt-transport-https && \
+  sudo apt-get update && \
+  sudo apt-get install -y dotnet-sdk-5.0
 
 # Install preview of next SDK version.
-RUN mkdir $HOME/dotnet_install && cd $HOME/dotnet_install
-RUN curl -H 'Cache-Control: no-cache' -L https://aka.ms/install-dotnet-preview -o install-dotnet-preview.sh
-RUN chmod 755 install-dotnet-preview.sh && ./install-dotnet-preview.sh
-
-# Install .NET Core SDK
-RUN apt-get update && apt-get install -y dotnet-sdk-3.1
+#RUN mkdir $HOME/dotnet_install && cd $HOME/dotnet_install
+#RUN curl -H 'Cache-Control: no-cache' -L https://aka.ms/install-dotnet-preview -o install-dotnet-preview.sh
+#RUN chmod 755 install-dotnet-preview.sh && ./install-dotnet-preview.sh
 
 # Enable detection of running in a container
 ENV DOTNET_RUNNING_IN_CONTAINER=true \
