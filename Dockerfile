@@ -15,9 +15,12 @@ RUN dpkg -i packages-microsoft-prod.deb
 
 # Install .NET CLI dependencies
 RUN apt-get update; \
-  sudo apt-get install -y apt-transport-https && \
-  sudo apt-get update && \
-  sudo apt-get install -y dotnet-sdk-5.0
+  apt-get install -y apt-transport-https && \
+  apt-get update && \
+  apt-get install -y dotnet-sdk-5.0
+
+# Still needed for e.g. dotnet interactive...
+RUN apt-get update && apt-get install -y dotnet-sdk-3.1
 
 # Install preview of next SDK version.
 #RUN mkdir $HOME/dotnet_install && cd $HOME/dotnet_install
