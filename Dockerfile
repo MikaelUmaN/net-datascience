@@ -6,7 +6,7 @@ ARG PATH="/opt/conda/bin:${PATH}"
 USER root
 
 # apt packages
-RUN apt update && apt install -y sudo wget gcc git g++ && apt clean
+RUN apt update && apt install -y sudo wget gcc git g++ vim && apt clean
 
 # conda
 RUN wget \
