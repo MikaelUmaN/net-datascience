@@ -6,7 +6,7 @@ ARG PATH="/opt/conda/bin:${PATH}"
 USER root
 
 # apt packages
-RUN apt update && apt install -y sudo wget gcc git g++ vim && apt clean
+RUN apt update && apt install -y sudo wget gcc git g++ vim texlive-latex-extra && apt clean
 
 # conda
 RUN wget \
@@ -48,7 +48,8 @@ RUN conda config --system --add channels conda-forge && \
 RUN conda update conda && \
     conda install nodejs=15.3.0 jupyterlab=3.0.5 jupyterhub=1.1.0 nb_conda_kernels \
       pandas cufflinks-py ipykernel dask=2.30 dask-kubernetes=0.11 \
-      distributed=2.30 fastparquet pyarrow python-snappy pymc3 s3fs seaborn python-kaleido && \    
+      distributed=2.30 fastparquet pyarrow python-snappy pymc3 s3fs seaborn \
+      python-kaleido quandl && \    
     conda install -c pytorch pytorch=1.6 torchvision cpuonly && \
     fix-permissions.sh $CONDA_DIR
 
