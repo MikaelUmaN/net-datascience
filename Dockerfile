@@ -1,5 +1,6 @@
 FROM ubuntu:20.04
 
+ENV DEBIAN_FRONTEND noninteractive
 ENV PATH="/opt/conda/bin:${PATH}"
 ARG PATH="/opt/conda/bin:${PATH}"
 
