@@ -43,7 +43,7 @@ RUN useradd -m -s /bin/bash -N -u $NB_UID $NB_USER && \
 # Create basic root python environment with proxied public channels
 RUN conda config --system --add channels conda-forge && \
     conda config --add channels conda-forge && \
-    conda install python=3.8.5 conda-build curl && conda clean --all && \
+    conda install python=3.9.5 conda-build curl && conda clean --all && \
     conda init bash
 
 RUN conda update conda && \
@@ -51,7 +51,7 @@ RUN conda update conda && \
       pandas cufflinks-py ipykernel dask=2.30 dask-kubernetes=0.11 \
       distributed=2.30 fastparquet pyarrow python-snappy pymc3 s3fs seaborn \
       python-kaleido quandl && \    
-    conda install -c pytorch pytorch=1.6 torchvision cpuonly && \
+    conda install -c pytorch pytorch torchvision cpuonly && \
     fix-permissions.sh $CONDA_DIR
 
 RUN wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
