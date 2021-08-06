@@ -7,7 +7,7 @@ ARG PATH="/opt/conda/bin:${PATH}"
 USER root
 
 # apt packages
-RUN apt update && apt install -y sudo wget gcc git g++ vim texlive-latex-extra && apt clean
+RUN apt update && apt install -y sudo build-essential wget gcc git g++ vim texlive-latex-extra && apt clean
 
 # conda
 RUN wget \
@@ -43,21 +43,21 @@ RUN useradd -m -s /bin/bash -N -u $NB_UID $NB_USER && \
 # Create basic root python environment with proxied public channels
 RUN conda config --system --add channels conda-forge && \
     conda config --add channels conda-forge && \
-    conda install python=3.9.5 conda-build curl && conda clean --all && \
+    conda install python=3.9 conda-build curl && conda clean --all && \
     conda init bash
 
 RUN conda update conda && \
-    conda install nodejs=15.3.0 jupyterlab=3.0.5 jupyterhub=1.1.0 nb_conda_kernels \
-      pandas cufflinks-py ipykernel dask=2.30 dask-kubernetes=0.11 \
-      distributed=2.30 fastparquet pyarrow python-snappy pymc3 s3fs seaborn \
-      python-kaleido quandl && \    
-    conda install -c pytorch pytorch torchvision cpuonly && \
+    conda install pip pandas cufflinks-py ipykernel ipywidgets dask=2.30 dask-kubernetes=0.11 \
+        distributed=2.30 fastparquet pyarrow python-snappy pymc3 s3fs seaborn pytest \
+        pandas-profiling h5py python-kaleido graphviz python-graphviz \
+        aiofiles aiohttp html5lib spacy xlrd xlwt openpyxl nodejs=15.3.0 nbdime quandl \
+        jupyterlab=3.1 jupyterhub=1.1.0 nb_conda_kernels awscli jupyter-server-proxy && \
+    conda install -c plotly plotly=5.1.0 && \
+    conda install -c pytorch pytorch=1.9 torchvision cpuonly && \
     fix-permissions.sh $CONDA_DIR
 
 RUN wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
 RUN dpkg -i packages-microsoft-prod.deb
-
-ARG DEBIAN_FRONTEND=noninteractive
 
 # Install .NET CLI dependencies
 RUN apt-get update; \
@@ -66,7 +66,7 @@ RUN apt-get update; \
   apt-get install -y dotnet-sdk-5.0
 
 # Legacy dependencies
-RUN apt-get update && apt-get install -y dotnet-sdk-3.1
+RUN apt-get install -y dotnet-sdk-3.1
 
 # Install preview of next SDK version.
 #RUN mkdir $HOME/dotnet_install && cd $HOME/dotnet_install
@@ -95,20 +95,15 @@ USER $NB_USER
 
 RUN npm install -g yarn
 
+# For diffing notebooks.
+RUN nbdime config-git --enable --global
+
 # Numpy multithreading uses MKL lib and for it to work properly on kubernetes
 # this variable needs to be set. Else numpy thinks it has access to all cores on the node.
 ENV MKL_THREADING_LAYER=GNU
 
-RUN conda install jupyter-server-proxy && \
-    jupyter labextension install jupyterlab-plotly@4.14.3 &&  \
-    jupyter labextension install @jupyter-widgets/jupyterlab-manager && \
-    jupyter serverextension enable --sys-prefix jupyter_server_proxy
-
 # Install lastest build from main branch of Microsoft.DotNet.Interactive
 RUN dotnet tool install -g Microsoft.dotnet-interactive --add-source "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json"
-
-RUN dotnet tool install -g fake-cli
-RUN dotnet tool install -g paket
 
 ENV PATH="${PATH}:${HOME}/.dotnet/tools"
 RUN echo "$PATH"
