@@ -60,7 +60,7 @@ RUN wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-p
 RUN dpkg -i packages-microsoft-prod.deb
 
 # Install .NET CLI dependencies
-RUN apt update && apt install -y dotnet-sdk-5.0 dotnet-sdk-3.1
+RUN apt update && apt install -y dotnet-sdk-6.0 dotnet-sdk-5.0
 
 # Install preview of next SDK version.
 #RUN mkdir $HOME/dotnet_install && cd $HOME/dotnet_install
@@ -68,13 +68,15 @@ RUN apt update && apt install -y dotnet-sdk-5.0 dotnet-sdk-3.1
 #RUN chmod 755 install-dotnet-preview.sh && ./install-dotnet-preview.sh
 
 # Enable detection of running in a container
-ENV DOTNET_RUNNING_IN_CONTAINER=true \
-    # Enable correct mode for dotnet watch (only mode supported in a container)
-    DOTNET_USE_POLLING_FILE_WATCHER=true \
-    # Skip extraction of XML docs - generally not useful within an image/container - helps performance
-    NUGET_XMLDOC_MODE=skip \
-    # Opt out of telemetry until after we install jupyter when building the image, this prevents caching of machine id
-    DOTNET_TRY_CLI_TELEMETRY_OPTOUT=true
+ENV \
+  # Enable detection of running in a container
+  DOTNET_RUNNING_IN_CONTAINER=true \
+  # Enable correct mode for dotnet watch (only mode supported in a container)
+  DOTNET_USE_POLLING_FILE_WATCHER=true \
+  # Skip extraction of XML docs - generally not useful within an image/container - helps performance
+  NUGET_XMLDOC_MODE=skip \
+  # Opt out of telemetry until after we install jupyter when building the image, this prevents caching of machine id
+  DOTNET_INTERACTIVE_CLI_TELEMETRY_OPTOUT=true
 
 # Add kubectl
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl && \
