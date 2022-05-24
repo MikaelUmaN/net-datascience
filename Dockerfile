@@ -60,7 +60,7 @@ RUN wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-p
 RUN dpkg -i packages-microsoft-prod.deb
 
 # Install .NET CLI dependencies
-RUN apt update && apt install -y dotnet-sdk-6.0 dotnet-sdk-6.0
+RUN apt update && apt install -y dotnet-sdk-6.0 dotnet-sdk-5.0
 
 # Install preview of next SDK version.
 #RUN mkdir $HOME/dotnet_install && cd $HOME/dotnet_install
