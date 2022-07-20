@@ -46,15 +46,27 @@ RUN conda config --system --add channels conda-forge && \
     conda install python=3.9 conda-build curl && conda clean --all && \
     conda init bash
 
-RUN conda install -c pytorch pytorch=1.10.1 torchvision cpuonly && \
-    conda install dask=2.30 dask-kubernetes=0.11 distributed=2.30 jupyterlab=3.2.5 jupyterhub=1.5.0 \
-    nodejs=15.3.0 pandas=1.4.1 cufflinks-py=0.17.3 fastparquet=0.7.0 pyarrow=5.0.0 python-snappy=0.6.0 \
-    seaborn=0.11.2 pandas-profiling=3.1.0 xlrd=2.0.1 xlwt=1.3.0 openpyxl=3.0.9 ipympl=0.8.2 \
-    s3fs=0.4.2 pytest=6.2.5 h5py=3.3.0 requests_ntlm=1.1.0 awscli=1.21.6 pymc3=3.11.4 zeep=4.1.0 \
-    python-kaleido=0.2.1 graphviz=2.48.0 aiofiles=0.7.0 aiohttp=3.7.4 html5lib=1.1 spacy=3.1.1 \
-    python-graphviz=0.17 pyppeteer=0.2.6 blpapi=3.16.2 nbdime=3.1.1 jupyter-server-proxy=3.2.0 \
-    nb_conda_kernels=2.3.1 plotly=5.5.0 bottleneck=1.3.2 pytables numba=0.55.1 quandl && \
+RUN conda install -c pytorch "pytorch<2" torchvision cpuonly
+RUN conda install dask=2022.7 dask-kubernetes=2022.5 distributed=2022.7 
+RUN conda install "jupyterlab<4" nodejs=18.6.0 "pandas<2" fastparquet pyarrow python-snappy \
+    seaborn xlrd xlwt openpyxl ipympl s3fs pytest "pymc3<4" \
+    python-kaleido python-graphviz aiofiles aiohttp html5lib "spacy<4" \
+    pyppeteer nbdime requests nb_conda_kernels "plotly<6" pytables \
+    numba kubernetes-client && \
     fix-permissions.sh $CONDA_DIR
+
+# Removed packages:
+# h5py=3.3.0
+# awscli=1.21.6
+# blpapi=3.16.2, bloomberg...
+# zeep=4.1.0, only used for webservices, e.g. datalicense.
+# requests_ntlm=1.1.0, only when running against windows.
+# graphviz=2.48.0, shouldn't be needed because python-graphviz should include it as a dependency.
+# jupyterhub=1.5.0, multi-user server.
+# cufflinks-py=0.17.3, not needed if plotly and seaborn are used.
+# pandas-profiling=3.1.0, not used that much.
+# bottleneck=1.3.2, faster numpy.
+# jupyter-server-proxy=3.2.0, lets you run arbitrary external processes (such as RStudio, Shiny Server, syncthing, PostgreSQL, etc)
 
 RUN wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
 RUN dpkg -i packages-microsoft-prod.deb
