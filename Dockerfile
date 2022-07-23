@@ -52,7 +52,7 @@ RUN conda install "jupyterlab<4" nodejs=18.6.0 "pandas<2" fastparquet pyarrow py
     seaborn xlrd xlwt openpyxl ipympl s3fs pytest "pymc3<4" \
     python-kaleido python-graphviz aiofiles aiohttp html5lib "spacy<4" \
     pyppeteer nbdime requests nb_conda_kernels "plotly<6" pytables \
-    numba kubernetes-client && \
+    numba kubernetes-client "scikit-learn<2" retrying && \
     fix-permissions.sh $CONDA_DIR
 
 # Removed packages:
