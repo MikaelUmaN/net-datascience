@@ -7,7 +7,9 @@ ARG PATH="/opt/conda/bin:${PATH}"
 USER root
 
 # apt packages
-RUN apt update && apt install -y sudo htop build-essential wget gcc git g++ vim texlive-latex-extra && apt clean
+RUN apt update && apt install -y sudo htop build-essential wget gcc git g++ \
+  iputils-ping iproute2 vim texlive-latex-extra libnss3 libxss1 libx11-xcb1 libgtk-3-0 && \
+  apt clean
 
 # conda
 RUN wget \
@@ -43,36 +45,25 @@ RUN useradd -m -s /bin/bash -N -u $NB_UID $NB_USER && \
 # Create basic root python environment with proxied public channels
 RUN conda config --system --add channels conda-forge && \
     conda config --add channels conda-forge && \
-    conda install python=3.9 conda-build curl && conda clean --all && \
+    conda install python=3.10 conda-build curl && conda clean --all && \
     conda init bash
 
-RUN conda install -c pytorch "pytorch<2" torchvision cpuonly
-RUN conda install dask=2022.7 dask-kubernetes=2022.5 distributed=2022.7 
-RUN conda install "jupyterlab<4" nodejs=18.6.0 "pandas<2" fastparquet pyarrow python-snappy \
-    seaborn xlrd xlwt openpyxl ipympl s3fs pytest "pymc3<4" \
-    python-kaleido python-graphviz aiofiles aiohttp html5lib "spacy<4" \
-    pyppeteer nbdime requests nb_conda_kernels "plotly<6" pytables \
-    numba kubernetes-client "scikit-learn<2" retrying && \
+RUN conda install -c pytorch pytorch=1.13.0 torchvision cpuonly
+RUN conda install dask=2022.10.2 dask-kubernetes=2022.10.1 distributed=2022.10.2 jupyterlab=3.5.0 \
+    pandas=1.5.1 pymc=4.3.0 numpyro=0.10.1 spacy=3.4.2 numba=0.56.3 scikit-learn-intelex=2021.6.0 \
+    cufflinks-py=0.17.3 pyarrow=9.0.0 python-snappy=0.6.0 \
+    seaborn=0.12.1 openpyxl=3.0.10 ipympl=0.9.2 lxml=4.9.1 pytest=7.2.0 aiofiles=22.1.0 aiohttp=3.8.3 \
+    python-graphviz=0.20.1 nb_conda_kernels=2.3.1 plotly=5.11.0 pytables=3.7.0 \
+    python-confluent-kafka=1.9.2 autopep8=2.0.0 awscli=1.27.2 nodejs=18.12.1 \
+    pyppeteer=1.0.2 python-kaleido=0.2.1 graphviz=6.0.1 cvxopt=1.3.0 osqp=0.6.2 && \
+    conda clean --all -y && \
     fix-permissions.sh $CONDA_DIR
-
-# Removed packages:
-# h5py=3.3.0
-# awscli=1.21.6
-# blpapi=3.16.2, bloomberg...
-# zeep=4.1.0, only used for webservices, e.g. datalicense.
-# requests_ntlm=1.1.0, only when running against windows.
-# graphviz=2.48.0, shouldn't be needed because python-graphviz should include it as a dependency.
-# jupyterhub=1.5.0, multi-user server.
-# cufflinks-py=0.17.3, not needed if plotly and seaborn are used.
-# pandas-profiling=3.1.0, not used that much.
-# bottleneck=1.3.2, faster numpy.
-# jupyter-server-proxy=3.2.0, lets you run arbitrary external processes (such as RStudio, Shiny Server, syncthing, PostgreSQL, etc)
 
 RUN wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
 RUN dpkg -i packages-microsoft-prod.deb
 
 # Install .NET CLI dependencies
-RUN apt update && apt install -y dotnet-sdk-6.0 dotnet-sdk-5.0
+RUN apt update && apt install -y dotnet-sdk-7.0 dotnet-sdk-6.0
 
 # Install preview of next SDK version.
 #RUN mkdir $HOME/dotnet_install && cd $HOME/dotnet_install
@@ -103,15 +94,15 @@ USER $NB_USER
 
 RUN npm install -g yarn
 
-# For diffing notebooks.
-RUN nbdime config-git --enable --global
-
 # Numpy multithreading uses MKL lib and for it to work properly on kubernetes
 # this variable needs to be set. Else numpy thinks it has access to all cores on the node.
 ENV MKL_THREADING_LAYER=GNU
 
 # Install lastest build from main branch of Microsoft.DotNet.Interactive
 RUN dotnet tool install -g Microsoft.dotnet-interactive --add-source "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json"
+
+# Source code formatter
+RUN dotnet tool install -g fantomas
 
 ENV PATH="${PATH}:${HOME}/.dotnet/tools"
 RUN echo "$PATH"
