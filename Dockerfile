@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV PATH="/opt/conda/bin:${PATH}"
@@ -45,24 +45,25 @@ RUN useradd -m -s /bin/bash -N -u $NB_UID $NB_USER && \
 # Create basic root python environment with proxied public channels
 RUN conda config --system --add channels conda-forge && \
     conda config --add channels conda-forge && \
-    conda install python=3.10 conda-build curl && conda clean --all && \
+    conda install python=3.11 conda-build curl && conda clean --all && \
     conda init bash
 
-RUN conda install -c pytorch pytorch=1.13.0 torchvision cpuonly
-RUN conda install dask=2022.10.2 dask-kubernetes=2022.10.1 distributed=2022.10.2 jupyterlab=3.5.0 \
-    pandas=1.5.1 pymc=4.3.0 numpyro=0.10.1 spacy=3.4.2 numba=0.56.3 scikit-learn-intelex=2021.6.0 \
-    cufflinks-py=0.17.3 pyarrow=9.0.0 python-snappy=0.6.0 \
-    seaborn=0.12.1 openpyxl=3.0.10 ipympl=0.9.2 lxml=4.9.1 pytest=7.2.0 aiofiles=22.1.0 aiohttp=3.8.3 \
-    python-graphviz=0.20.1 nb_conda_kernels=2.3.1 plotly=5.11.0 pytables=3.7.0 \
-    python-confluent-kafka=1.9.2 autopep8=2.0.0 awscli=1.27.2 nodejs=18.12.1 \
-    pyppeteer=1.0.2 python-kaleido=0.2.1 graphviz=6.0.1 cvxopt=1.3.0 osqp=0.6.2 && \
+RUN conda install -c pytorch pytorch=2.0.1 torchvision cpuonly
+RUN conda install "jupyterlab>=4,<5" "pymc>=5,<6" "pandas>=2,<3" "numpy>1,<2" "numpyro<2" \
+    "seaborn<2" "plotly>=5,<6" "spacy>=3,<4" numba>=0.57.1 "scikit-learn-intelex>=2023.2.1" \
+    "pyarrow>=13,<14" "pytest>=7,<8" "aiofiles>=23,<24" "aiohttp>=3,<4" \
+    "python-confluent-kafka>=2,<3" "nodejs>=18,<19" "cvxopt>=1,<2" "osqp<2" \
+    "autopep8>=2,<3" "pytables>=3,<4" "python-snappy<2" "openpyxl>=3,<4" "lxml>=4,<5" \
+    dask dask-kubernetes distributed \
+    python-graphviz graphviz python-kaleido && \
     conda clean --all -y && \
     fix-permissions.sh $CONDA_DIR
 
-RUN wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-RUN dpkg -i packages-microsoft-prod.deb
+# Add microsoft package repository.
+#RUN wget https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+#RUN dpkg -i packages-microsoft-prod.deb
 
-# Install .NET CLI dependencies
+# Install .NET
 RUN apt update && apt install -y dotnet-sdk-7.0 dotnet-sdk-6.0
 
 # Install preview of next SDK version.
