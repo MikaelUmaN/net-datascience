@@ -48,15 +48,19 @@ RUN conda config --system --add channels conda-forge && \
     conda install python=3.11 conda-build curl && conda clean --all && \
     conda init bash
 
-RUN conda install -c pytorch pytorch=2.0.1 torchvision cpuonly
+# Faster solver, using mamba libsolv underneath.
+RUN conda install -n base conda-libmamba-solver
+RUN conda config --set solver libmamba
+
+RUN conda install -c pytorch "pytorch>=2,<3" torchvision cpuonly
+RUN conda install "python-graphviz>=0.20.1,<2" "python-kaleido>=0.2.1,<2"
 RUN conda install "jupyterlab>=4,<5" "pymc>=5,<6" "pandas>=2,<3" "numpy>1,<2" "numpyro<2" \
-    "seaborn<2" "plotly>=5,<6" "spacy>=3,<4" numba>=0.57.1 "scikit-learn-intelex>=2023.2.1" \
+    "seaborn<2" "plotly>=5,<6" "spacy>=3,<4" numba>=0.57.1 "scikit-learn>=1,<2" \
     "pyarrow>=13,<14" "pytest>=7,<8" "aiofiles>=23,<24" "aiohttp>=3,<4" \
     "python-confluent-kafka>=2,<3" "nodejs>=18,<19" "cvxopt>=1,<2" "osqp<2" \
-    "autopep8>=2,<3" "pytables>=3,<4" "python-snappy<2" "openpyxl>=3,<4" "lxml>=4,<5" \
-    dask dask-kubernetes distributed \
-    python-graphviz graphviz python-kaleido && \
-    conda clean --all -y && \
+    "autopep8>=2,<3" "pytables>=3,<4" "python-snappy<2" "openpyxl>=3,<4" "lxml>=4,<5"
+RUN conda install dask=2023.9.* dask-kubernetes=2023.9.* distributed=2023.9.*
+RUN conda clean --all -y && \
     fix-permissions.sh $CONDA_DIR
 
 # Add microsoft package repository.
