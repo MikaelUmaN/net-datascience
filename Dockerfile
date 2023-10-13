@@ -63,60 +63,62 @@ RUN conda install dask=2023.9.* dask-kubernetes=2023.9.* distributed=2023.9.*
 RUN conda clean --all -y && \
     fix-permissions.sh $CONDA_DIR
 
-# Add microsoft package repository.
-#RUN wget https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-#RUN dpkg -i packages-microsoft-prod.deb
-
 # Install .NET
 RUN apt update && apt install -y dotnet-sdk-7.0 dotnet-sdk-6.0
 
-# Install preview of next SDK version.
-#RUN mkdir $HOME/dotnet_install && cd $HOME/dotnet_install
-#RUN curl -H 'Cache-Control: no-cache' -L https://aka.ms/install-dotnet-preview -o install-dotnet-preview.sh
-#RUN chmod 755 install-dotnet-preview.sh && ./install-dotnet-preview.sh
-
 # Enable detection of running in a container
 ENV \
-  # Enable detection of running in a container
+  # Enable detection of running in a container.
   DOTNET_RUNNING_IN_CONTAINER=true \
-  # Enable correct mode for dotnet watch (only mode supported in a container)
+  # Enable correct mode for dotnet watch (only mode supported in a container).
   DOTNET_USE_POLLING_FILE_WATCHER=true \
-  # Skip extraction of XML docs - generally not useful within an image/container - helps performance
+  # Skip extraction of XML docs - generally not useful within an image/container - helps performance.
   NUGET_XMLDOC_MODE=skip \
-  # Opt out of telemetry until after we install jupyter when building the image, this prevents caching of machine id
-  DOTNET_INTERACTIVE_CLI_TELEMETRY_OPTOUT=true
+  # Opt out of telemetry.
+  DOTNET_INTERACTIVE_CLI_TELEMETRY_OPTOUT=true \
+  # Make F# projects default for dotnet new cli.
+  DOTNET_NEW_PREFERRED_LANG=F# \
+  # Skip messages on telemetry.
+  DOTNET_INTERACTIVE_SKIP_FIRST_TIME_EXPERIENCE=true \
+  # Used for nuget cache etc.
+  DOTNET_CLI_HOME=/opt/dotnet
 
-# Add kubectl
+# Add kubectl.
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl && \
     chmod +x ./kubectl && \
     mv ./kubectl /usr/local/bin/
 
-# Add user to sudo
-RUN usermod -aG sudo ${NB_USER}
-RUN echo "${NB_USER}  ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/${NB_USER}
+# Add helm.
+RUN curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-USER $NB_USER
-
-RUN npm install -g yarn
+# Create dotnet directory.
+RUN mkdir /opt/dotnet
+RUN fix-permissions.sh /opt/dotnet
 
 # Numpy multithreading uses MKL lib and for it to work properly on kubernetes
 # this variable needs to be set. Else numpy thinks it has access to all cores on the node.
 ENV MKL_THREADING_LAYER=GNU
 
 # Install lastest build from main branch of Microsoft.DotNet.Interactive
-RUN dotnet tool install -g Microsoft.dotnet-interactive --add-source "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json"
+RUN dotnet tool install Microsoft.dotnet-interactive --tool-path ${DOTNET_CLI_HOME}/tools 
 
 # Source code formatter
-RUN dotnet tool install -g fantomas
+RUN dotnet tool install fantomas --tool-path ${DOTNET_CLI_HOME}/tools
 
-ENV PATH="${PATH}:${HOME}/.dotnet/tools"
+ENV JUPYTER_PATH="${DOTNET_CLI_HOME}/kernels"
+ENV PATH="${PATH}:${DOTNET_CLI_HOME}/tools"
 RUN echo "$PATH"
 
 # Install kernel specs
-RUN dotnet interactive jupyter install
+RUN mkdir ${DOTNET_CLI_HOME}/kernels
+RUN dotnet interactive jupyter install --path ${DOTNET_CLI_HOME}/kernels
 
-# Make F# projects default for dotnet new cli
-ENV DOTNET_NEW_PREFERRED_LANG=F#
+# Add notebook user to sudo.
+RUN usermod -aG sudo ${NB_USER}
+RUN echo "${NB_USER}  ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/${NB_USER}
+
+
+USER $NB_USER
 
 RUN conda init bash
 
