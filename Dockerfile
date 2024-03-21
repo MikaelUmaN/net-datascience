@@ -1,31 +1,24 @@
-FROM ubuntu:22.04
+FROM ubuntu:23.10
+
+USER root
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV PATH="/opt/conda/bin:${PATH}"
 ARG PATH="/opt/conda/bin:${PATH}"
 
-USER root
-
 # apt packages
-RUN apt update && apt install -y sudo htop build-essential wget gcc git g++ \
-  iputils-ping iproute2 vim texlive-latex-extra libnss3 libxss1 libx11-xcb1 libgtk-3-0 && \
+RUN apt update && apt install -y sudo htop build-essential wget gcc git g++ curl \
+  iputils-ping iproute2 vim texlive-latex-extra libnss3 libxss1 libx11-xcb1 libgtk-3-0 \
+  libtiff5-dev && \
   apt clean
-
-# conda
-RUN wget \
-  https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
-  && mkdir /root/.conda \
-  && bash Miniconda3-latest-Linux-x86_64.sh -b -p /opt/conda \
-  && rm -f Miniconda3-latest-Linux-x86_64.sh
 
 COPY start.sh /usr/local/bin/
 COPY fix-permissions.sh /usr/local/bin/
-
 RUN chmod +x /usr/local/bin/start.sh && chmod +x /usr/local/bin/fix-permissions.sh
 
-ARG NB_USER="jovyan"
-ARG NB_UID="1000"
-ARG NB_GID="100"
+ARG NB_USER=jovyan
+ARG NB_UID=1000
+ARG NB_GID=100
 
 ENV CONDA_DIR=/opt/conda \
   SHELL=/bin/bash \
@@ -35,36 +28,71 @@ ENV CONDA_DIR=/opt/conda \
   PATH=$CONDA_DIR/bin:$PATH \
   HOME=/home/$NB_USER
 
-RUN useradd -m -s /bin/bash -N -u $NB_UID $NB_USER && \
-    mkdir -p $CONDA_DIR && \
-    chown $NB_USER:$NB_GID $CONDA_DIR && \
-    chmod g+w /etc/passwd && \
-    fix-permissions.sh $HOME && \
-    fix-permissions.sh $CONDA_DIR
+# conda
+RUN wget \
+  https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+  && mkdir /root/.conda \
+  && bash Miniconda3-latest-Linux-x86_64.sh -b -p $CONDA_DIR \
+  && rm -f Miniconda3-latest-Linux-x86_64.sh
 
-# Create basic root python environment with proxied public channels
+# Remove default user (ubuntu) if it exists.
+RUN if id $NB_UID &>/dev/null; then \
+  echo "Deleting user with UID ${NB_UID}}"; \
+  userdel -r $(getent passwd $NB_UID | cut -d: -f1); \
+  fi
+
+RUN useradd -m -s /bin/bash -N -u $NB_UID $NB_USER && \
+  chmod g+w /etc/passwd
+
+# Add notebook user to sudo.
+RUN usermod -aG sudo ${NB_USER}
+RUN echo "${NB_USER}  ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/${NB_USER}
+
+# Create basic root python environment.
 RUN conda config --system --add channels conda-forge && \
-    conda config --add channels conda-forge && \
-    conda install python=3.11 conda-build curl && conda clean --all && \
+  conda install python=3.11 conda-build curl && \
+  conda clean --all && \
     conda init bash
 
-# Faster solver, using mamba libsolv underneath.
-RUN conda install -n base conda-libmamba-solver
-RUN conda config --set solver libmamba
+# Reinstalling libarchive due to known issue: https://github.com/conda/conda-libmamba-solver/issues/283
+RUN conda install libarchive --force-reinstall
 
 RUN conda install -c pytorch "pytorch>=2,<3" torchvision cpuonly
+RUN conda install dask=2023.9.* dask-kubernetes=2023.9.* distributed=2023.9.* \
+  "jupyterlab>=4,<5" "pymc>=5,<6" "pandas>=2,<3" "numpy>1,<2" "numpyro<2" \
+  "seaborn<2" "plotly>=5,<6" "matplotlib>=3,<4" "spacy>=3,<4" "numba>=0.57.1" "scikit-learn>=1,<2"
+RUN conda install "pyarrow>=13,<14" "pytest>=7,<8" "aiofiles>=23,<24" "aiohttp>=3,<4" \
+  "python-confluent-kafka>=2,<3" "nodejs>=18,<19" "cvxopt>=1,<2" "osqp<2" "autopep8>=2,<3" \
+  "pytables>=3,<4" "python-snappy<2" "openpyxl>=3,<4" "lxml>=5,<6" "marimo<=2"
 RUN conda install "python-graphviz>=0.20.1,<2" "python-kaleido>=0.2.1,<2"
-RUN conda install "jupyterlab>=4,<5" "pymc>=5,<6" "pandas>=2,<3" "numpy>1,<2" "numpyro<2" \
-    "seaborn<2" "plotly>=5,<6" "spacy>=3,<4" numba>=0.57.1 "scikit-learn>=1,<2" \
-    "pyarrow>=13,<14" "pytest>=7,<8" "aiofiles>=23,<24" "aiohttp>=3,<4" \
-    "python-confluent-kafka>=2,<3" "nodejs>=18,<19" "cvxopt>=1,<2" "osqp<2" \
-    "autopep8>=2,<3" "pytables>=3,<4" "python-snappy<2" "openpyxl>=3,<4" "lxml>=4,<5"
-RUN conda install dask=2023.9.* dask-kubernetes=2023.9.* distributed=2023.9.*
 RUN conda clean --all -y && \
-    fix-permissions.sh $CONDA_DIR
+  fix-permissions.sh $CONDA_DIR || true
 
-# Install .NET
-RUN apt update && apt install -y dotnet-sdk-7.0 dotnet-sdk-6.0
+# Matplotlib uses pillow which uses libtiff5. Without reinstall it does not find libtiff.
+RUN pip install pillow --force
+
+# Numpy multithreading uses MKL lib and for it to work properly on kubernetes
+# this variable needs to be set. Else numpy thinks it has access to all cores on the node.
+ENV MKL_THREADING_LAYER=GNU
+
+# node.js LTS.
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && \
+  sudo apt-get install -y nodejs
+
+# Kubectl.
+# If the folder `/etc/apt/keyrings` does not exist, it should be created before the curl command, read the note below.
+# sudo mkdir -p -m 755 /etc/apt/keyrings
+ARG KUBECTLVER=1.29
+RUN curl -fsSL https://pkgs.k8s.io/core:/stable:/v${KUBECTLVER}/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+# This overwrites any existing configuration in /etc/apt/sources.list.d/kubernetes.list
+RUN echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v${KUBECTLVER}/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+RUN apt-get update && apt-get install -y kubectl
+
+# Helm.
+RUN curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+# Install dotnet.
+RUN apt install -y dotnet-sdk-8.0 dotnet-sdk-7.0
 
 # Enable detection of running in a container
 ENV \
@@ -83,21 +111,8 @@ ENV \
   # Used for nuget cache etc.
   DOTNET_CLI_HOME=/opt/dotnet
 
-# Add kubectl.
-RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl && \
-    chmod +x ./kubectl && \
-    mv ./kubectl /usr/local/bin/
-
-# Add helm.
-RUN curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-
 # Create dotnet directory.
-RUN mkdir /opt/dotnet
-RUN fix-permissions.sh /opt/dotnet
-
-# Numpy multithreading uses MKL lib and for it to work properly on kubernetes
-# this variable needs to be set. Else numpy thinks it has access to all cores on the node.
-ENV MKL_THREADING_LAYER=GNU
+RUN mkdir $DOTNET_CLI_HOME
 
 # Install lastest build from main branch of Microsoft.DotNet.Interactive
 RUN dotnet tool install Microsoft.dotnet-interactive --tool-path ${DOTNET_CLI_HOME}/tools 
@@ -105,7 +120,7 @@ RUN dotnet tool install Microsoft.dotnet-interactive --tool-path ${DOTNET_CLI_HO
 # Source code formatter
 RUN dotnet tool install fantomas --tool-path ${DOTNET_CLI_HOME}/tools
 
-ENV JUPYTER_PATH="${DOTNET_CLI_HOME}/kernels"
+ENV JUPYTER_PATH="${DOTNET_CLI_HOME}"
 ENV PATH="${PATH}:${DOTNET_CLI_HOME}/tools"
 RUN echo "$PATH"
 
@@ -113,10 +128,9 @@ RUN echo "$PATH"
 RUN mkdir ${DOTNET_CLI_HOME}/kernels
 RUN dotnet interactive jupyter install --path ${DOTNET_CLI_HOME}/kernels
 
-# Add notebook user to sudo.
-RUN usermod -aG sudo ${NB_USER}
-RUN echo "${NB_USER}  ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/${NB_USER}
-
+# Ensure permissions.
+RUN fix-permissions.sh $DOTNET_CLI_HOME
+RUN chown -R $NB_USER:$NB_GID $HOME
 
 USER $NB_USER
 
