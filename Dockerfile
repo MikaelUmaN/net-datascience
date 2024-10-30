@@ -109,7 +109,10 @@ ENV \
   # Skip messages on telemetry.
   DOTNET_INTERACTIVE_SKIP_FIRST_TIME_EXPERIENCE=true \
   # Used for nuget cache etc.
-  DOTNET_CLI_HOME=/opt/dotnet
+  DOTNET_CLI_HOME=/opt/dotnet \
+  # Install path for dotnet. 
+  # The default location on Ubuntu 22.04 is /usr/share/dotnet (when installed from packages.microsoft.com) or /usr/lib/dotnet (when installed from Jammy feed). 
+  DOTNET_ROOT=/usr/lib/dotnet
 
 # Create dotnet directory.
 RUN mkdir $DOTNET_CLI_HOME
