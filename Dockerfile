@@ -1,13 +1,13 @@
-FROM ubuntu:23.10
+FROM ubuntu:24.04
 
 USER root
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 ENV PATH="/opt/conda/bin:${PATH}"
 ARG PATH="/opt/conda/bin:${PATH}"
 
 # apt packages
-RUN apt update && apt install -y sudo htop build-essential wget gcc git g++ curl \
+RUN apt update && apt install -y sudo htop build-essential wget gcc git g++ curl lsof \
   iputils-ping iproute2 vim texlive-latex-extra libnss3 libxss1 libx11-xcb1 libgtk-3-0 \
   libtiff5-dev && \
   apt clean
@@ -21,12 +21,12 @@ ARG NB_UID=1000
 ARG NB_GID=100
 
 ENV CONDA_DIR=/opt/conda \
-  SHELL=/bin/bash \
-  NB_USER=$NB_USER \
-  NB_UID=$NB_UID \
-  NB_GID=$NB_GID \
-  PATH=$CONDA_DIR/bin:$PATH \
-  HOME=/home/$NB_USER
+    SHELL=/bin/bash \
+    NB_USER=$NB_USER \
+    NB_UID=$NB_UID \
+    NB_GID=$NB_GID
+ENV PATH=$CONDA_DIR/bin:$PATH \
+    HOME=/home/$NB_USER
 
 # conda
 RUN wget \
@@ -49,35 +49,39 @@ RUN usermod -aG sudo ${NB_USER}
 RUN echo "${NB_USER}  ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/${NB_USER}
 
 # Create basic root python environment.
-RUN conda config --system --add channels conda-forge && \
-  conda install python=3.11 conda-build curl && \
-  conda clean --all && \
+RUN conda install python=3.12 conda-build curl && \
+    conda clean --all && \
     conda init bash
 
+# Transfer ownership of /opt/conda to jovyan. Not a good idea for multi-user settings or other complex scenarios but works for our dev image.
+RUN chown -R ${NB_USER}:${NB_GID} ${CONDA_DIR}
+
+USER $NB_USER
+
 # Reinstalling libarchive due to known issue: https://github.com/conda/conda-libmamba-solver/issues/283
+# numexpr set to >= 2.8.4 after warning from pandas.
+# Last conda install line consists dev and build validation libraries and are purposely not restricted by version.
 RUN conda install libarchive --force-reinstall
+RUN conda install -c pytorch "pytorch>=2,<3" torchvision cpuonly 
+RUN conda install -c conda-forge dask dask-kubernetes distributed
+RUN conda install -c conda-forge "jupyterlab>=4,<5" "pymc>=5,<6" "pandas>=2,<3" "numexpr>=2.8.4" "numpy>=1,<3" "numpyro<2" \
+    "seaborn<2" "plotly>=5,<6" "matplotlib>=3,<4" "spacy>=3,<4" "numba>=0.57.1" "scikit-learn>=1,<2" \
+    "pyarrow>=15.0.2,<17" "aiofiles>=23,<24" "aiohttp>=3,<4" \
+    "python-confluent-kafka>=2,<3" "nodejs>=18,<19" "cvxopt>=1,<2" "osqp<2" \
+    "pytables>=3,<4" "python-snappy<2" "openpyxl>=3,<4" "lxml>=5,<6" "marimo<=2" \
+    "python-graphviz>=0.20.1,<2" "python-kaleido>=0.2.1,<2" \
+    "orjson<4" "fastapi<2" "uvicorn<2" "zeep<5" "slack-sdk<4" "more-itertools<11" \
+    "retrying<2" "avro<2" "fastavro<2" "python-confluent-kafka<3" "cmreshandler<2" "s3fs<2024.3" "aiobotocore<3"
+RUN conda install -c conda-forge pytest autopep8 ruff mypy ipywidgets && \
+    # Matplotlib uses pillow which uses libtiff5. Without reinstall it does not find libtiff.
+    pip install pillow --force && \
+    conda clean --all -y
 
-RUN conda install -c pytorch "pytorch>=2,<3" torchvision cpuonly
-RUN conda install dask=2023.9.* dask-kubernetes=2023.9.* distributed=2023.9.* \
-  "jupyterlab>=4,<5" "pymc>=5,<6" "pandas>=2,<3" "numpy>1,<2" "numpyro<2" \
-  "seaborn<2" "plotly>=5,<6" "matplotlib>=3,<4" "spacy>=3,<4" "numba>=0.57.1" "scikit-learn>=1,<2"
-RUN conda install "pyarrow>=13,<14" "pytest>=7,<8" "aiofiles>=23,<24" "aiohttp>=3,<4" \
-  "python-confluent-kafka>=2,<3" "nodejs>=18,<19" "cvxopt>=1,<2" "osqp<2" "autopep8>=2,<3" \
-  "pytables>=3,<4" "python-snappy<2" "openpyxl>=3,<4" "lxml>=5,<6" "marimo<=2"
-RUN conda install "python-graphviz>=0.20.1,<2" "python-kaleido>=0.2.1,<2"
-RUN conda clean --all -y && \
-  fix-permissions.sh $CONDA_DIR || true
-
-# Matplotlib uses pillow which uses libtiff5. Without reinstall it does not find libtiff.
-RUN pip install pillow --force
-
-# Numpy multithreading uses MKL lib and for it to work properly on kubernetes
-# this variable needs to be set. Else numpy thinks it has access to all cores on the node.
-ENV MKL_THREADING_LAYER=GNU
+USER root
 
 # node.js LTS.
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && \
-  sudo apt-get install -y nodejs
+    apt-get install -y nodejs
 
 # Kubectl.
 # If the folder `/etc/apt/keyrings` does not exist, it should be created before the curl command, read the note below.
@@ -91,8 +95,13 @@ RUN apt-get update && apt-get install -y kubectl
 # Helm.
 RUN curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
+# AWS CLI.
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    ./aws/install
+
 # Install dotnet.
-RUN apt install -y dotnet-sdk-8.0 dotnet-sdk-7.0
+RUN apt install -y dotnet-sdk-8.0
 
 # Enable detection of running in a container
 ENV \
@@ -137,7 +146,10 @@ RUN chown -R $NB_USER:$NB_GID $HOME
 
 USER $NB_USER
 
-RUN conda init bash
+# Numpy multithreading uses MKL lib and for it to work properly on kubernetes
+# this variable needs to be set. Else numpy thinks it has access to all cores on the node.
+ENV MKL_THREADING_LAYER=GNU
+ENV JUPYTER_ALLOW_INSECURE_WRITES=1
 
 WORKDIR $HOME
 CMD ["start.sh", "jupyter", "lab", "--ip", "0.0.0.0"]
