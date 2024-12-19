@@ -79,9 +79,11 @@ RUN conda install -c conda-forge pytest autopep8 ruff mypy ipywidgets && \
 
 USER root
 
-# node.js LTS.
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && \
-    apt-get install -y nodejs
+# node.js LTS from nvm (node version manager)
+ENV NVM_DIR=/opt/nvm
+RUN mkdir -p $NVM_DIR
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash && source $NVM_DIR/nvm.sh && \
+  nvm install --lts
 
 # Kubectl.
 # If the folder `/etc/apt/keyrings` does not exist, it should be created before the curl command, read the note below.
