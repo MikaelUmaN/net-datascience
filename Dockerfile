@@ -65,14 +65,14 @@ USER $NB_USER
 RUN conda install libarchive --force-reinstall
 RUN conda install -c pytorch "pytorch>=2,<3" torchvision cpuonly 
 RUN conda install -c conda-forge dask dask-kubernetes distributed
-RUN conda install -c conda-forge "jupyterlab>=4,<5" "pymc>=5,<6" "pandas>=2,<3" "numexpr>=2.8.4" "numpy>=1,<3" "numpyro<2" \
+RUN conda install -c conda-forge "jupyterlab>=4,<5" "pymc>=5,<6" "pandas>=2,<3" "numexpr>=2.8.4" "numpy>=2,<3" "numpyro<2" \
     "seaborn<2" "plotly>=5,<6" "matplotlib>=3,<4" "spacy>=3,<4" "numba>=0.57.1" "scikit-learn>=1,<2" \
-    "pyarrow>=15.0.2,<17" "aiofiles>=23,<24" "aiohttp>=3,<4" \
+    "pyarrow>=17,<19" "aiofiles>=23,<24" "aiohttp>=3,<4" \
     "python-confluent-kafka>=2,<3" "nodejs>=18,<19" "cvxopt>=1,<2" "osqp<2" \
     "pytables>=3,<4" "python-snappy<2" "openpyxl>=3,<4" "lxml>=5,<6" "marimo<=2" \
     "python-graphviz>=0.20.1,<2" "python-kaleido>=0.2.1,<2" \
-    "orjson<4" "fastapi<2" "uvicorn<2" "zeep<5" "slack-sdk<4" "more-itertools<11" \
-    "retrying<2" "avro<2" "fastavro<2" "python-confluent-kafka<3" "cmreshandler<2" "s3fs<2024.3" "aiobotocore<3"
+    "orjson<4" "fastapi<2" "uvicorn<2" "slack-sdk<4" "more-itertools<11" \
+    "retrying<2" "python-confluent-kafka<3" "cmreshandler<2" "s3fs<=2024.12" "aiobotocore<3"
 RUN conda install -c conda-forge pytest autopep8 ruff mypy ipywidgets && \
     # Matplotlib uses pillow which uses libtiff5. Without reinstall it does not find libtiff.
     pip install pillow --force && \
