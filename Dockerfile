@@ -8,7 +8,8 @@ ARG PATH="/opt/conda/bin:${PATH}"
 
 # apt packages
 RUN apt update && apt install -y sudo htop build-essential wget gcc git g++ curl lsof \
-  iputils-ping iproute2 vim texlive-latex-extra libnss3 libxss1 libx11-xcb1 libgtk-3-0 \
+  iputils-ping iproute2 vim texlive-latex-extra texlive-luatex texlive-fonts-recommended texlive-fonts-extra \
+  libnss3 libxss1 libx11-xcb1 libgtk-3-0 \
   libtiff5-dev && \
   apt clean
 
